@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FreeChat - Só funciona</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#FAF9F5;color:#1a1a1a}
+.top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff;border-bottom:1px solid #eee;position:sticky;top:0;z-index:10;flex-wrap:wrap;gap:8px}
+.logo{font-weight:800;font-size:20px} .pill{border:1px solid #ddd;background:#fff;padding:8px 14px;border-radius:999px;cursor:pointer;font-size:14px} .pill.active{background:#D97757;color:#fff;border-color:#D97757}
+.wrap{max-width:780px;margin:0 auto;padding:20px 16px 120px}
+.card{background:#fff;border:1px solid #eee;border-radius:20px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.greet{font-size:32px;font-weight:800;margin:18px 0 6px} .sub{color:#666;margin:0 0 16px}
+.models{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.msg{padding:12px 14px;border-radius:14px;margin:10px 0;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.msg.user{background:#FFE8D9;margin-left:40px} .msg.ai{background:#fff;border:1px solid #eee} .msg.err{background:#FEE2E2;border:1px solid #FCA5A5}
+textarea{width:100%;border:1px solid #ddd;border-radius:16px;padding:14px;font-size:16px;resize:vertical;min-height:64px;font-family:inherit}
+.btn{border:0;border-radius:999px;padding:12px 18px;cursor:pointer;font-weight:700} .btn-main{background:#D97757;color:#fff;width:100%;font-size:16px} .btn-ghost{background:#F1F1F1}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px} .tabs{display:flex;gap:6px;flex-wrap:wrap} .tab{padding:8px 12px;border-radius:999px;border:1px solid #ddd;background:#fff;cursor:pointer} .tab.active{background:#111;color:#fff}
+.bar{height:10px;background:#eee;border-radius:99px;overflow:hidden;margin:4px 0 10px} .bar>div{height:100%;background:#D97757}
+.small{font-size:13px;color:#666} select{padding:10px;border-radius:999px;border:1px solid #ddd;background:#fff}
+.composer{position:fixed;left:0;right:0;bottom:0;background:#FAF9F5;border-top:1px solid #eee;padding:12px} .composer-inner{max-width:780px;margin:auto;background:#fff;border:1px solid #ddd;border-radius:20px;padding:10px}
+#status{font-size:13px;color:#666;min-height:18px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">✦ FreeChat</div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span id="statusDot" style="font-size:13px">🟢 Online</span>
+    <select id="langSelect" onchange="changeLang(this.value)">
+      <option value="pt-BR">Português Brasil</option><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="it">Italiano</option><option value="ja">日本語</option><option value="zh-CN">中文简体</option><option value="hi">हिन्दी</option><option value="ar">العربية</option>
+    </select>
+    <button class="pill" onclick="toggleUsage()">📊 <span data-i18n="usage">Uso</span></button>
+    <button class="pill" onclick="toggleDrive()">☁️ Drive</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="greet" id="greetText">Olá, como posso ajudar?</div>
+    <p class="sub" id="subText">Só 2 modelos que funcionam de verdade. Sem resposta fake.</p>
+    <div class="models">
+      <button class="pill active" id="btnPoll" onclick="setModel('pollinations')">Pollinations • GPT-OSS 20B</button>
+      <button class="pill" id="btnHack" onclick="setModel('hackclub')">Hack Club • Qwen3 32B</button>
+    </div>
+    <div id="chat">
+      <div class="msg ai">Oi! Eu sou o FreeChat. Escreva abaixo e eu chamo a API de verdade. Se falhar, mostro o erro real, não invento texto.</div>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <div id="usagePanel" class="card" style="display:none;margin-top:14px">
+    <h3 data-i18n="usageTitle">Uso real</h3>
+    <div class="tabs">
+      <button class="tab active" onclick="setPeriod('today',this)">Hoje</button>
+      <button class="tab" onclick="setPeriod('week',this)">Esta semana</button>
+      <button class="tab" onclick="setPeriod('month',this)">Este mês</button>
+      <button class="tab" onclick="setPeriod('year',this)">Este ano</button>
+      <button class="tab" onclick="setPeriod('all',this)">Tudo</button>
+    </div>
+    <div id="usageContent" style="margin-top:12px">Carregando uso...</div>
+    <div class="row"><button class="btn btn-ghost" onclick="clearUsage()">Limpar uso</button><button class="btn btn-ghost" onclick="testAI()">Testar IA</button></div>
+  </div>
+
+  <div id="drivePanel" class="card" style="display:none;margin-top:14px">
+    <h3>☁️ Google Drive</h3>
+    <p class="small">Sem login falso. Aqui você baixa a conversa em JSON e sobe no Drive. 100% real e funciona.</p>
+    <div class="row">
+      <button class="btn btn-ghost" onclick="downloadJSON()">⬇ Baixar conversa (JSON)</button>
+      <button class="btn btn-ghost" onclick="window.open('https://drive.google.com','_blank')">Abrir Drive ↗</button>
+    </div>
+    <p class="small" id="driveInfo">Pasta sugerida no Drive: FreeChat - Conversations</p>
+  </div>
+</div>
+
+<div class="composer"><div class="composer-inner">
+  <textarea id="inputBox" placeholder="Pergunte qualquer coisa..."></textarea>
+  <div class="row"><button class="btn btn-main" id="sendBtn" onclick="sendMessage()">Enviar ➤</button></div>
+  <div id="status2" class="small"></div>
+</div></div>
+
+<script>
+var currentModel='pollinations';
+var currentPeriod='today';
+var currentLang='pt-BR';
+var messages=[];
+
+var I18N={
+ 'pt-BR':{greet:'Olá, como posso ajudar?',sub:'Só 2 modelos que funcionam de verdade. Sem resposta fake.',usage:'Uso',usageTitle:'Uso real',placeholder:'Pergunte qualquer coisa...',send:'Enviar ➤'},
+ 'en':{greet:'Hello, how can I help?',sub:'Only 2 models that really work. No fake replies.',usage:'Usage',usageTitle:'Real usage',placeholder:'Ask anything...',send:'Send ➤'},
+ 'es':{greet:'Hola, ¿cómo puedo ayudarte?',sub:'Solo 2 modelos que realmente funcionan. Sin respuestas falsas.',usage:'Uso',usageTitle:'Uso real',placeholder:'Pregunta lo que sea...',send:'Enviar ➤'},
+ 'fr':{greet:'Bonjour, comment puis-je aider ?',sub:'Seuls 2 modèles qui fonctionnent vraiment. Pas de fausse réponse.',usage:'Utilisation',usageTitle:'Utilisation réelle',placeholder:'Demandez n\u2019importe quoi...',send:'Envoyer ➤'},
+ 'de':{greet:'Hallo, wie kann ich helfen?',sub:'Nur 2 Modelle, die wirklich funktionieren. Keine Fake-Antworten.',usage:'Nutzung',usageTitle:'Echte Nutzung',placeholder:'Frag irgendetwas...',send:'Senden ➤'},
+ 'it':{greet:'Ciao, come posso aiutare?',sub:'Solo 2 modelli che funzionano davvero. Nessuna risposta falsa.',usage:'Utilizzo',usageTitle:'Utilizzo reale',placeholder:'Chiedi qualsiasi cosa...',send:'Invia ➤'},
+ 'ja':{greet:'こんにちは、どうお手伝いできますか？',sub:'本当に動くモデルは2つだけ。フェイク返信なし。',usage:'使用量',usageTitle:'実際の使用量',placeholder:'何でも聞いてください...',send:'送信 ➤'},
+ 'zh-CN':{greet:'你好，我能帮什么？',sub:'只有2个真正可用的模型。没有虚假回复。',usage:'用量',usageTitle:'真实用量',placeholder:'随便问...',send:'发送 ➤'},
+ 'hi':{greet:'नमस्ते, मैं कैसे मदद कर सकता हूँ?',sub:'केवल 2 मॉडल जो सच में काम करते हैं। कोई नकली जवाब नहीं।',usage:'उपयोग',usageTitle:'वास्तविक उपयोग',placeholder:'कुछ भी पूछें...',send:'भेजें ➤'},
+ 'ar':{greet:'مرحباً، كيف يمكنني المساعدة؟',sub:'نموذجان فقط يعملان فعلاً. بدون ردود مزيفة.',usage:'الاستخدام',usageTitle:'الاستخدام الحقيقي',placeholder:'اسأل أي شيء...',send:'إرسال ➤'}
+};
+function getCookie(name){var m=document.cookie.match(new RegExp('(^| )'+name+'=([^;]+)'));return m?decodeURIComponent(m[2]):null}
+function setCookie(name,val){document.cookie=name+'='+encodeURIComponent(val)+'; max-age=31536000; path=/; SameSite=Lax';}
+function applyLang(){
+  var d=I18N[currentLang]||I18N['pt-BR'];
+  document.getElementById('greetText').innerText=d.greet;
+  document.getElementById('subText').innerText=d.sub;
+  document.getElementById('inputBox').placeholder=d.placeholder;
+  document.getElementById('sendBtn').innerText=d.send;
+  document.getElementById('langSelect').value=currentLang;
+  document.documentElement.lang=currentLang;
+  document.body.dir=(currentLang==='ar'?'rtl':'ltr');
+}
+function changeLang(v){currentLang=v;setCookie('freechat_lang',v);localStorage.setItem('freechat_lang',v);applyLang();}
+function initLang(){var c=getCookie('freechat_lang')||localStorage.getItem('freechat_lang')||'pt-BR';if(!I18N[c]) c='pt-BR';currentLang=c;applyLang();}
+function setModel(m){currentModel=m;document.getElementById('btnPoll').classList.toggle('active',m==='pollinations');document.getElementById('btnHack').classList.toggle('active',m==='hackclub');}
+function getUsage(){try{return JSON.parse(localStorage.getItem('freechat_usage_v2')||'[]')}catch(e){return[]}}
+function saveUsage(u){localStorage.setItem('freechat_usage_v2',JSON.stringify(u));}
+function addUsage(model,charsIn,charsOut){var u=getUsage();u.push({ts:Date.now(),model:model,charsIn:charsIn,charsOut:charsOut});saveUsage(u);renderUsage();}
+function clearUsage(){localStorage.removeItem('freechat_usage_v2');renderUsage();alert('Uso limpo');}
+function filterByPeriod(u,period){
+  var now=new Date();return u.filter(function(x){var d=new Date(x.ts);
+    if(period==='today') return d.toDateString()===now.toDateString();
+    if(period==='week'){var s=new Date(now);s.setDate(now.getDate()-7);return d>=s;}
+    if(period==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    if(period==='year') return d.getFullYear()===now.getFullYear();
+    return true;
+  });
+}
+function setPeriod(p,el){currentPeriod=p;var tabs=document.querySelectorAll('.tab');tabs.forEach(function(t){t.classList.remove('active')});if(el) el.classList.add('active');renderUsage();}
+function renderUsage(){
+  var all=getUsage();var f=filterByPeriod(all,currentPeriod);
+  var poll=f.filter(function(x){return x.model==='pollinations'}).length;
+  var hack=f.filter(function(x){return x.model==='hackclub'}).length;
+  var charsOut=f.reduce(function(a,x){return a+(x.charsOut||0)},0);
+  var today=filterByPeriod(all,'today').length;
+  var month=filterByPeriod(all,'month').length;
+  var year=filterByPeriod(all,'year').length;
+  var html='<p><b>Total no período:</b> '+f.length+' mensagens • '+charsOut+' caracteres de resposta</p>';
+  html+='<p>Pollinations: '+poll+' • Hack Club: '+hack+' • Hoje: '+today+' • Mês: '+month+' • Ano: '+year+' • Total geral: '+all.length+'</p>';
+  // por dia últimos 7 dias
+  html+='<h4>Por dia (últimos 7 dias)</h4>';
+  for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);var ds=d.toDateString();var cnt=all.filter(function(x){return new Date(x.ts).toDateString()===ds}).length;var pct=all.length?Math.round(cnt/Math.max(1,Math.max.apply(null,all.map(function(){return 1})))):0;var w=Math.min(100,cnt*20);html+='<div>'+d.toLocaleDateString('pt-BR')+' - '+cnt+' msgs</div><div class="bar"><div style="width:'+w+'%"></div></div>';}
+  html+='<h4>Por mês</h4>';
+  for(var m=5;m>=0;m--){var dm=new Date();dm.setMonth(dm.getMonth()-m);var mc=all.filter(function(x){var dd=new Date(x.ts);return dd.getMonth()===dm.getMonth()&&dd.getFullYear()===dm.getFullYear()}).length;html+='<div>'+dm.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})+' - '+mc+' msgs</div><div class="bar"><div style="width:'+Math.min(100,mc*20)+'%"></div></div>';}
+  if(all.length===0) html+='<p><b>Nenhum uso ainda.</b> Envie sua primeira mensagem que aparece aqui de verdade.</p>';
+  var el=document.getElementById('usageContent');if(el) el.innerHTML=html;
+}
+function toggleUsage(){var p=document.getElementById('usagePanel');p.style.display=(p.style.display==='none'?'block':'none');if(p.style.display==='block') renderUsage();}
+function toggleDrive(){var p=document.getElementById('drivePanel');p.style.display=(p.style.display==='none'?'block':'none');}
+function downloadJSON(){
+  var data=JSON.stringify({messages:messages,usage:getUsage(),exported:new Date().toISOString()},null,2);
+  var blob=new Blob([data],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='freechat-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  alert('Baixado! Agora sobe esse arquivo na pasta FreeChat - Conversations no Drive.');
+}
+async function callPollinations(prompt){
+  var url='https://text.pollinations.ai/'+encodeURIComponent(prompt)+'?model=openai';
+  var r=await fetch(url,{method:'GET'});
+  if(!r.ok) throw new Error('Pollinations GET '+r.status);
+  var t=await r.text();if(!t||t.length<3) throw new Error('Pollinations retornou vazio');
+  return t;
+}
+async function callHackClub(msgs){
+  var r=await fetch('https://ai.hackclub.com/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'qwen/qwen3-32b',messages:msgs})});
+  if(!r.ok) throw new Error('HackClub POST '+r.status);
+  var j=await r.json();var c=j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content;if(!c) throw new Error('HackClub sem conteúdo');
+  return c;
+}
+async function sendMessage(){
+  var input=document.getElementById('inputBox');var text=input.value.trim();if(!text) return;
+  var chat=document.getElementById('chat');
+  var div=document.createElement('div');div.className='msg user';div.textContent=text;chat.appendChild(div);
+  messages.push({role:'user',content:text});input.value='';
+  var status=document.getElementById('status');status.textContent='Pensando... tentando '+currentModel+'...';
+  var prompt='Responda em '+(currentLang==='pt-BR'?'português brasileiro':currentLang)+'. Histórico: '+messages.slice(-6).map(function(m){return m.role+': '+m.content}).join('\n')+'\nUsuário: '+text;
+  var reply='';var used=currentModel;var errMsg='';
+  try{
+    if(currentModel==='pollinations'){reply=await callPollinations(prompt);}else{reply=await callHackClub([{role:'system',content:'Responda em '+(currentLang==='pt-BR'?'português brasileiro':currentLang)},{role:'user',content:text}]);}
+  }catch(e1){
+    errMsg=e1.message;
+    try{
+      if(currentModel==='pollinations'){reply=await callHackClub([{role:'user',content:text}]);used='hackclub';}else{reply=await callPollinations(prompt);used='pollinations';}
+      status.textContent='Trocado para '+used+' porque o primeiro falhou ('+errMsg+')';
+    }catch(e2){
+      var ed=document.createElement('div');ed.className='msg err';ed.innerHTML='<b>Erro da API: '+e2.message+'</b><br>Tente novamente ou troque de modelo.<br><button class="btn btn-ghost" onclick="retryLast()">Tentar novamente</button> • Dica: abra em navegador externo, o preview pode bloquear fetch.';chat.appendChild(ed);
+      status.textContent='Falha em ambos os provedores: '+e2.message;return;
+    }
+  }
+  addUsage(used,text.length,reply.length);
+  messages.push({role:'assistant',content:reply});
+  var ad=document.createElement('div');ad.className='msg ai';ad.textContent=reply;chat.appendChild(ad);
+  status.textContent='Via '+used+' • Uso salvo. Hoje: '+filterByPeriod(getUsage(),'today').length;
+  chat.scrollTop=chat.scrollHeight;
+}
+function retryLast(){var last=messages[messages.length-1];if(last&&last.role==='user'){document.getElementById('inputBox').value=last.content;sendMessage();}}
+async function testAI(){
+  document.getElementById('status').textContent='Testando...';
+  try{var r=await callPollinations('Diga oi em uma frase');document.getElementById('status').textContent='Teste OK - Pollinations respondeu: '+r.slice(0,80);}catch(e){document.getElementById('status').textContent='Teste falhou: '+e.message+' - tentando Hack Club...';try{var r2=await callHackClub([{role:'user',content:'Diga oi'}]);document.getElementById('status').textContent='Teste OK via Hack Club: '+r2.slice(0,80);}catch(e2){document.getElementById('status').textContent='Ambos falharam: '+e2.message;}}
+}
+document.getElementById('inputBox').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
+initLang();renderUsage();
+document.getElementById('statusDot').textContent=navigator.onLine?'🟢 Online':'🔴 Offline';
+console.log('FreeChat loaded - puro HTML, sem React, sem branco');
+</script>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
+</html>
